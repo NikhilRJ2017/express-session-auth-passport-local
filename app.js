@@ -7,10 +7,9 @@ var routes = require('./routes');
 const connection = require('./config/database');
 
 // Package documentation - https://www.npmjs.com/package/connect-mongo
-const MongoStore = require('connect-mongo')(session);
+const MongoStore = require('connect-mongo'); 
 
-// Need to require the entire Passport config module so app.js knows about it
-require('./config/passport');
+
 
 /**
  * -------------- GENERAL SETUP ----------------
@@ -31,13 +30,36 @@ app.use(express.urlencoded({extended: true}));
  */
 
 // TODO
+const sessionStore = MongoStore.create({
+    mongoUrl: process.env.DB_STRING,
+    autoRemove: 'disabled',
+})
+
+app.use(session({
+    secret: process.env.SECRET,
+    resave: false,
+    saveUninitialized: true,
+    store: sessionStore,
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24
+    }
+}));
 
 /**
  * -------------- PASSPORT AUTHENTICATION ----------------
  */
+// Need to require the entire Passport config module so app.js knows about it
+require('./config/passport');
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use((req, res, next)=>{
+    //!to log how passport wraps user id into session because of passport.session() and passport.serializeUser()
+    console.log(req.session);
+    console.log(req.user);
+    next();
+});
 
 
 /**
